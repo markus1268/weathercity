@@ -1,114 +1,147 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
+ * Weather City App
+ * https://github.com/markus1268/weathercity.git
  *
  * @format
  * @flow
  */
 
-import React, {Fragment} from 'react';
+import React from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
-  ScrollView,
-  View,
   Text,
-  StatusBar,
+  View,
+  Platform,
+  TextInput,
+  KeyboardAvoidingView,
+  ImageBackground,
+  ActivityIndicator,
+  StatusBar
 } from 'react-native';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import { fetchLocationID, fetchWeather, fetchLocationId } from "./utils/api";
+import getImageForWeather from "./utils/getImageForWeather";
 
-const App = () => {
-  return (
-    <Fragment>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
+import SearchInput from "./components/SearchInput";
+
+export default class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      location: "",
+      loading: false,
+      error: false,
+      temperature: 0,
+      weather: ""
+    };
+  }
+
+  componentDidMount() {
+    this.handleUpdateLocation("London");
+  }
+
+  handleUpdateLocation = async city => {
+    if (!city) return;
+
+    this.setState(
+      {
+        loading: true
+      },
+      async () => {
+        try {
+          const locationID = await fetchLocationId(city);
+          const { location, weather, temperature } = await fetchWeather(
+            locationID
+          );
+
+          this.setState({
+            loading: false,
+            error: false,
+            location,
+            weather,
+            temperature
+          });
+        } catch (e) {
+          this.setState({
+            loading: false,
+            error: true
+          });
+        }
+      }
+    );
+  };
+
+  render() {
+    const { location, weather, temperature, error, loading } = this.state;
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior="padding">
+        <ImageBackground
+          source={getImageForWeather(weather)}
+          style={styles.imageContainer}
+          imageStyle={styles.image}
+        >
+          <View style={styles.detailsContainer}>
+            <ActivityIndicator animating={loading} color="white" size="large" />
+            {!loading && (
+              <View>
+                {error && (
+                  <Text style={[styles.smallText, styles.textStyle]}>
+                    Could not load weather, please try a different city
+                  </Text>
+                )}
+                {!error && (
+                  <View>
+                    <Text style={[styles.largeText, styles.textStyle]}>
+                      {location}
+                    </Text>
+                    <Text style={[styles.smallText, styles.textStyle]}>
+                      {weather}
+                    </Text>
+                    <Text style={[styles.largeText, styles.textStyle]}>
+                      {`${Math.round(temperature)}`}C
+                    </Text>
+                  </View>
+                )}
+                <SearchInput
+                  placeholder="Search any City"
+                  onSubmit={this.handleUpdateLocation}
+                />
+              </View>
+            )}
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </Fragment>
-  );
-};
+        </ImageBackground>
+      </KeyboardAvoidingView>
+    );
+  }
+}
 
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
+  container: {
+    flex: 1,
+    backgroundColor: "#34495E"
   },
-  engine: {
-    position: 'absolute',
-    right: 0,
+  imageContainer: { flex: 1 },
+  image: { flex: 1, width: null, height: null, resizeMode: "cover" },
+  detailsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
+    paddingHorizontal: 20
   },
-  body: {
-    backgroundColor: Colors.white,
+  textStyle: {
+    textAlign: "center",
+    fontFamily: Platform.OS === "ios" ? "AvenirNext-Regular" : "Roboto",
+    color: "white"
   },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
-});
-
-export default App;
+  largeText: { fontSize: 44 },
+  smallText: { fontSize: 18 },
+  TextInput: {
+    backgroundColor: "#666",
+    color: "white",
+    height: 40,
+    width: 300,
+    marginTop: 20,
+    marginHorizontal: 10,
+    alignSelf: "center"
+  }
+})
