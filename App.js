@@ -73,6 +73,7 @@ export default class App extends React.Component {
 
   render() {
     const { location, weather, temperature, error, loading } = this.state;
+    var celcius = '\u00b0';
     return (
       <KeyboardAvoidingView style={styles.container} behavior="padding">
         <ImageBackground
@@ -98,7 +99,7 @@ export default class App extends React.Component {
                       {weather}
                     </Text>
                     <Text style={[styles.largeText, styles.textStyle]}>
-                      {`${Math.round(temperature)}`}C
+                      {`${Math.round(temperature)}`}{celcius}C
                     </Text>
                   </View>
                 )}
